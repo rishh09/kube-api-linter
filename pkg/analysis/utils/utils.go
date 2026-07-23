@@ -86,6 +86,54 @@ func IsStructType(pass *analysis.Pass, expr ast.Expr) bool {
 	return false
 }
 
+// IsZeroOmittableType checks whether the type can be omitted by the json
+// omitzero tag because it is a struct or declares IsZero() bool.
+func IsZeroOmittableType(pass *analysis.Pass, expr ast.Expr) bool {
+	if IsStructType(pass, expr) || HasIsZeroMethod(pass, expr) {
+		return true
+	}
+
+	typeOf := pass.TypesInfo.TypeOf(expr)
+	if typeOf == nil {
+		return false
+	}
+
+	_, ok := typeOf.Underlying().(*types.Struct)
+	return ok
+}
+
+// HasIsZeroMethod checks whether the type declares an IsZero() bool method.
+func HasIsZeroMethod(pass *analysis.Pass, expr ast.Expr) bool {
+	typeOf := pass.TypesInfo.TypeOf(expr)
+	if typeOf == nil {
+		return false
+	}
+
+	return hasIsZeroMethod(typeOf)
+}
+
+func hasIsZeroMethod(typeOf types.Type) bool {
+	method, _, _ := types.LookupFieldOrMethod(typeOf, false, nil, "IsZero")
+	if method == nil {
+		method, _, _ = types.LookupFieldOrMethod(types.NewPointer(typeOf), false, nil, "IsZero")
+		if method == nil {
+			return false
+		}
+	}
+
+	signature, ok := method.Type().(*types.Signature)
+	if !ok {
+		return false
+	}
+
+	if signature.Params().Len() != 0 || signature.Results().Len() != 1 {
+		return false
+	}
+
+	result, ok := signature.Results().At(0).Type().(*types.Basic)
+	return ok && result.Kind() == types.Bool
+}
+
 // IsStarExpr checks if the expression is a pointer type.
 // If it is, it returns the expression inside the pointer.
 func IsStarExpr(expr ast.Expr) (bool, ast.Expr) {

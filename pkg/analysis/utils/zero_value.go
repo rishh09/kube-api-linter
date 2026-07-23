@@ -62,7 +62,7 @@ func IsZeroValueValid(pass *analysis.Pass, field *ast.Field, typeExpr ast.Expr, 
 	case *ast.SelectorExpr:
 		// For qualified identifiers (e.g., corev1.ResourceList), use type info
 		// since we cannot look up the AST for external packages.
-		return isSelectorExprZeroValueValid(pass, field, t, markersAccess, qualifiedFieldName)
+		return isSelectorExprZeroValueValid(pass, field, t, markersAccess, considerOmitzero, qualifiedFieldName)
 	}
 
 	// We don't know what the type is so can't assert the zero value is valid.
@@ -71,10 +71,14 @@ func IsZeroValueValid(pass *analysis.Pass, field *ast.Field, typeExpr ast.Expr, 
 
 // isSelectorExprZeroValueValid checks if a qualified identifier (external package type) has a valid zero value.
 // It uses Go's type system to determine the underlying type.
-func isSelectorExprZeroValueValid(pass *analysis.Pass, field *ast.Field, selector *ast.SelectorExpr, markersAccess markershelper.Markers, qualifiedFieldName string) (bool, bool) {
+func isSelectorExprZeroValueValid(pass *analysis.Pass, field *ast.Field, selector *ast.SelectorExpr, markersAccess markershelper.Markers, considerOmitzero bool, qualifiedFieldName string) (bool, bool) {
 	typeOf := pass.TypesInfo.TypeOf(selector)
 	if typeOf == nil {
 		return false, false
+	}
+
+	if considerOmitzero && HasIsZeroMethod(pass, selector) {
+		return false, true
 	}
 
 	underlying := typeOf.Underlying()

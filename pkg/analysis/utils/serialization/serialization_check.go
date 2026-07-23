@@ -116,7 +116,7 @@ func (s *serializationCheck) Check(pass *analysis.Pass, field *ast.Field, marker
 		s.handleFieldShouldBePointer(pass, field, fieldName, isPointer, underlying, markersAccess, "should be a pointer.", qualifiedFieldName)
 		s.handleFieldShouldHaveOmitEmpty(pass, field, qualifiedFieldName, hasOmitEmpty, jsonTags)
 	case PointersPreferenceWhenRequired:
-		s.handleFieldOmitZero(pass, field, fieldName, jsonTags, underlying, hasOmitZero, hasValidZeroValue, isPointer, isStruct, markersAccess, qualifiedFieldName)
+		s.handleFieldOmitZero(pass, field, fieldName, jsonTags, underlying, hasOmitZero, hasValidZeroValue, isPointer, isStruct || utils.HasIsZeroMethod(pass, underlying), markersAccess, qualifiedFieldName)
 
 		if s.omitEmptyPolicy != OmitEmptyPolicyIgnore || hasOmitEmpty {
 			// If we require omitempty, or the field has omitempty, we can check the field properties based on it being an omitempty field.
@@ -153,6 +153,14 @@ func (s *serializationCheck) handleFieldShouldHaveOmitEmpty(pass *analysis.Pass,
 
 func (s *serializationCheck) checkFieldPropertiesWithOmitEmptyRequired(pass *analysis.Pass, field *ast.Field, fieldName string, jsonTags extractjsontags.FieldTagInfo, underlying ast.Expr, hasOmitEmpty, hasValidZeroValue, completeValidation, isPointer, isStruct bool, markersAccess markershelper.Markers, qualifiedFieldName string) {
 	switch {
+	case jsonTags.OmitZero && s.omitZeroPolicy != OmitZeroPolicyForbid && utils.IsZeroOmittableType(pass, underlying):
+		// Struct fields with omitzero already omit their zero value, so they do
+		// not also need omitempty or pointer indirection for omission.
+		return
+	case utils.IsZeroOmittableType(pass, underlying) && !hasValidZeroValue && s.omitZeroPolicy != OmitZeroPolicyForbid:
+		// OmitZero handling already reports the missing omitzero tag for this
+		// field. Do not also require omitempty.
+		return
 	case isStruct && !hasValidZeroValue && s.omitZeroPolicy != OmitZeroPolicyForbid:
 		// The struct field need not be pointer if it does not have a valid zero value.
 		return
