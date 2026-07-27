@@ -9,6 +9,8 @@ type TestStructs struct {
 
 	StructWithAllOptionalFieldsWithOmitEmpty *StructWithAllOptionalFields `json:"structWithAllOptionalFieldsWithOmitEmpty,omitempty"` // want "field TestStructs.StructWithAllOptionalFieldsWithOmitEmpty has a valid zero value \\({}\\), but the validation is not complete \\(e.g. min properties/adding required fields\\). The field should be a pointer to allow the zero value to be set. If the zero value is not a valid use case, complete the validation and remove the pointer."
 
+	StructWithAllOptionalFieldsWithOmitZero *StructWithAllOptionalFields `json:"structWithAllOptionalFieldsWithOmitZero,omitempty,omitzero"` // want "field TestStructs.StructWithAllOptionalFieldsWithOmitZero has a valid zero value \\({}\\), but the validation is not complete \\(e.g. min properties/adding required fields\\). The field should be a pointer to allow the zero value to be set. If the zero value is not a valid use case, complete the validation and remove the pointer." "field TestStructs.StructWithAllOptionalFieldsWithOmitZero should have the omitempty tag."
+
 	StructPtrWithAllOptionalFields *StructWithAllOptionalFields `json:"structPtrWithAllOptionalFields,omitempty"` // want "field TestStructs.StructPtrWithAllOptionalFields should have the omitempty tag."
 
 	StructPtrWithAllOptionalFieldsWithOmitEmpty *StructWithAllOptionalFields `json:"structPtrWithAllOptionalFieldsWithOmitEmpty,omitempty"`
@@ -69,8 +71,8 @@ type TestStructs struct {
 	// ExternalStructWithIsZeroWithOmitZero is an external struct with IsZero and omitzero.
 	ExternalStructWithIsZeroWithOmitZero externaltypes.StructTypeWithIsZero `json:"externalStructWithIsZeroWithOmitZero,omitzero"`
 
-	// ExternalStructWithIsZeroMissingOmitZero is an external struct with IsZero but no omitzero.
-	ExternalStructWithIsZeroMissingOmitZero externaltypes.StructTypeWithIsZero `json:"externalStructWithIsZeroMissingOmitZero,omitzero"` // want "field TestStructs.ExternalStructWithIsZeroMissingOmitZero does not allow the zero value. It must have the omitzero tag."
+	// ExternalStructWithIsZeroWithoutOmitZero confirms IsZero alone does not make the zero value invalid.
+	ExternalStructWithIsZeroWithoutOmitZero *externaltypes.StructTypeWithIsZero `json:"externalStructWithIsZeroWithoutOmitZero,omitempty"` // want "field TestStructs.ExternalStructWithIsZeroWithoutOmitZero has a valid zero value \\({}\\), but the validation is not complete \\(e.g. min properties/adding required fields\\). The field should be a pointer to allow the zero value to be set. If the zero value is not a valid use case, complete the validation and remove the pointer." "field TestStructs.ExternalStructWithIsZeroWithoutOmitZero should have the omitempty tag."
 }
 
 type StructWithAllOptionalFields struct {

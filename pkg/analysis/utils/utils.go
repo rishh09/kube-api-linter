@@ -86,19 +86,21 @@ func IsStructType(pass *analysis.Pass, expr ast.Expr) bool {
 	return false
 }
 
-// IsZeroOmittableType checks whether the type can be omitted by the json
-// omitzero tag because it is a struct or declares IsZero() bool.
-func IsZeroOmittableType(pass *analysis.Pass, expr ast.Expr) bool {
-	if IsStructType(pass, expr) || HasIsZeroMethod(pass, expr) {
-		return true
+// IsExternalStructType checks whether the expression refers to a struct from
+// another package.
+func IsExternalStructType(pass *analysis.Pass, expr ast.Expr) bool {
+	underlying := getUnderlyingType(expr)
+	if _, ok := underlying.(*ast.SelectorExpr); !ok {
+		return false
 	}
 
-	typeOf := pass.TypesInfo.TypeOf(expr)
+	typeOf := pass.TypesInfo.TypeOf(underlying)
 	if typeOf == nil {
 		return false
 	}
 
 	_, ok := typeOf.Underlying().(*types.Struct)
+
 	return ok
 }
 
@@ -131,6 +133,7 @@ func hasIsZeroMethod(typeOf types.Type) bool {
 	}
 
 	result, ok := signature.Results().At(0).Type().(*types.Basic)
+
 	return ok && result.Kind() == types.Bool
 }
 
